@@ -27,6 +27,18 @@ faces.push(Face(
     point2d(400, 0),
     point2d(0, 400)
 ));
+/* testing splitface *//*
+let mypl = Plane(
+    point3d(0, 0, 0),
+    point3d(0, 0, 1),
+    point3d(0, 1, 1)
+);
+let faces2 = [
+    ...splitface(faces[0], mypl),
+    ...splitface(faces[1], mypl)
+];
+faces = faces2;
+/* ----------------- */
 window.addEventListener('load', function() {
     let canvas = document.querySelector('#mycanv');
     let ctx3 = Context3D(canvas);
@@ -45,17 +57,17 @@ window.addEventListener('load', function() {
 	    a2 -= Math.PI * .03;
 	}
 	if(keydown[88]) {
-	    dist -= .1;
+	    dist -= .15;
 	}
 	if(keydown[89]) {
-	    dist += .1;
+	    dist += .15;
 	}
 	ctx3.ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx3.camera.tfm =
 	    transform.shift(0, 0, -dist)
 	    .mul(transform.rotx(a1))
 	    .mul(transform.roty(a2));
-	for(let i = 0; i < faces.length; i++) ctx3.idraw(faces[i]);
+	for(let i = 0; i < faces.length; i++) ctx3.fdraw(faces[i]);
     }, 40);
     // keys
     document.addEventListener('keydown', (e) => keydown[e.keyCode] = true);

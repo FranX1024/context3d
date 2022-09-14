@@ -123,7 +123,7 @@ matrix.merge_cols = function(...args) {
 matrix.merge_rows = function(...args) {
     let mmm = [];
     for(let i = 0; i < args.length; i++) {
-	mmm.push(args[i].data);
+	mmm.push(args[i].data[0]);
     }
     return matrix(mmm);
 }

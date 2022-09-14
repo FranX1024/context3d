@@ -38,8 +38,86 @@ function Camera(width, height, fov, pos, facing) {
     return cam;
 }
 
-function Face(img, p1, p2, p3, t1, t2, t3) {
-    return {p1, p2, p3, img, t1, t2, t3};
+function _splitface_intersect(p1, p2, plane1, plane2, plane3) {
+    let matr = matrix.merge_rows(
+	plane1.matr, plane2.matr, plane3.matr,
+	matrix([[0, 0, 0, 1]])
+    );
+    let rvec = matrix([[0],[0],[0],[1]]);
+    let ptvec;
+    try {
+	ptvec = matr.inv().mul(rvec);
+    } catch(e) {
+	return null;
+    }
+    let pt = point3d.from(ptvec);
+    if(pt.x > Math.max(p1.x, p2.x) ||
+       pt.x < Math.min(p1.x, p2.x) ||
+       pt.y > Math.max(p1.y, p2.y) ||
+       pt.y < Math.min(p1.y, p2.y) ||
+       pt.z > Math.max(p1.z, p2.z) ||
+       pt.z < Math.min(p1.z, p2.z) 
+      ) return null;
+    return pt;
+}
+
+function texture_coords(pt, p1, p2, t1, t2) {
+    let ff_x = p1.x - p2.x != 0 ? 1/(p1.x - p2.x) : 0;
+    let ff_y = p1.y - p2.y != 0 ? 1/(p1.y - p2.y) : 0;
+    return point2d(
+	t1.x + (pt.x - p1.x) * ff_x * (t1.x - t2.x),
+	t1.y + (pt.y - p1.y) * ff_y * (t1.y - t2.y)
+    );
+}
+
+function splitface(face, plane) {
+    let fplane = face.plane;
+    // independent point
+    let ip = point3d(face.p1.x, face.p1.y, face.p1.z);
+    if(face.p1.x == face.p2.x && face.p2.x == face.p3.x) ip.x++;
+    else if(face.p1.y == face.p2.y && face.p2.y == face.p3.y) ip.y++;
+    else ip.z++;
+    // intersect points
+    let p12 = _splitface_intersect(face.p1, face.p2, plane, fplane, Plane(face.p1, face.p2, ip));
+    let p23 = _splitface_intersect(face.p2, face.p3, plane, fplane, Plane(face.p2, face.p3, ip));
+    let p31 = _splitface_intersect(face.p3, face.p1, plane, fplane, Plane(face.p3, face.p1, ip));
+    // determine how to split the face
+    /* not sure if it works */
+    if(p31 && p12) {
+	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
+	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
+	return [
+	    Face(face.img, face.p1, p12, p31, face.t1, t12, t31, face.plane),
+	    Face(face.img, face.p2, p12, p31, face.t2, t12, t31, face.plane),
+	    Face(face.img, face.p2, face.p3, p31, face.t2, face.t3, t31, face.plane)
+	];
+    }
+    else if(p12 && p23) {
+	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
+	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
+	return [
+	    Face(face.img, face.p2, p12, p23, face.t2, t12, t23, face.plane),
+	    Face(face.img, face.p1, p23, p12, face.t1, t23, t12, face.plane),
+	    Face(face.img, face.p2, face.p3, p23, face.t2, face.t3, t23, face.plane)
+	];
+    }
+    else if(p23 && p31) {
+	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
+	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
+	return [
+	    Face(face.img, face.p3, p23, p31, face.t3, t23, t31, face.plane),
+	    Face(face.img, face.p1, p31, p23, face.t1, t31, t23, face.plane),
+	    Face(face.img, face.p1, face.p2, p23, face.t1, face.t2, t23, face.plane)
+	];
+    }
+    else return [face];
+}
+
+function Face(img, p1, p2, p3, t1, t2, t3, pln) {
+    return {
+	p1, p2, p3, img,
+	t1, t2, t3, plane: pln || Plane(p1, p2, p3)
+    };
 }
 
 // mid point on a line
@@ -77,7 +155,8 @@ function Context3D(canv, ffov) {
 		    p1.vec(), p2.vec(), p3.vec()
 		);
 		this.ctx.save();
-		this.ctx.beginPath(p1.x, p1.y);
+		this.ctx.beginPath();
+		this.ctx.moveTo(p1.x, p1.y);
 		this.ctx.lineTo(p2.x, p2.y);
 		this.ctx.lineTo(p3.x, p3.y);
 		this.ctx.lineTo(p1.x, p1.y);
@@ -109,25 +188,28 @@ function Context3D(canv, ffov) {
 		let t31 = pavg(face.t3, face.t1);
 		this.idraw(Face(face.img,
 				face.p1, p12, p31,
-				face.t1, t12, t31
+				face.t1, t12, t31, face.plane
 			       )
 			  );
 		this.idraw(Face(face.img,
 				face.p2, p23, p12,
-				face.t2, t23, t12
+				face.t2, t23, t12, face.plane
 			       )
 			  );
 		this.idraw(Face(face.img,
 				face.p3, p23, p31,
-				face.t3, t23, t31
+				face.t3, t23, t31, face.plane
 			       )
 			  );
 		this.idraw(Face(face.img,
 				p12, p23, p31,
-				t12, t23, t31
+				t12, t23, t31, face.plane
 			       )
 			  );
 	    }
+	},
+	fdraw(face) {
+	    this.idraw(face);
 	}
     };
 }
