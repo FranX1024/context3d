@@ -87,10 +87,32 @@ function interpolate(p1, p2, p3, v1, v2, v3) {
     return m2.mul(m1.inv());
 }
 
+function independent_point(a, b, c) {
+    let matr = matrix([
+	[a.x, b.x, c.x],
+	[a.y, b.y, c.y],
+	[1, 1, 1]
+    ]);
+    let invv;
+    try {
+	invv = matr.inv();
+    }
+    // x and y coords colinear
+    catch(e) {
+	if(a.x == b.x) return point3d(a.x + 1, a.y, a.z);
+	else return point3d(a.x, a.y + 1, a.z);
+    }
+    let mm = matrix([
+	[a.z, b.z, c.z]
+    ]).mul(invv);
+    let zz = mm.mul(matrix([[a.x],[a.y],[1]])).data[0][0] + 5;
+    return point3d(a.x, a.y, zz);
+}
+
 // plane
 function Plane(p1, p2, p3) {
     // p4 must not be on the plane
-    let p4 = point3d(Math.random()*100, Math.random()*100, Math.random()*100);
+    let p4 = independent_point(p1, p2, p3);
     /*
                     [x1 x2 x3 x4]
       [a  b  c  d ] [y1 y2 y3 y4] = [0 0 0 1]

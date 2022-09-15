@@ -114,7 +114,7 @@ function texture_coords(pt, p1, p2, t1, t2) {
 function splitface(face, plane) {
     let fplane = face.plane;
     // independent point
-    let ip = point3d(Math.random(), Math.random(), Math.random());
+    let ip = independent_point(face.p1, face.p2, face.p3);
     // intersect points
     let p12, p23, p31;
     try {
@@ -141,7 +141,7 @@ function splitface(face, plane) {
 	return [
 	    Face(face.img, face.p2, p12, p23, face.t2, t12, t23, face.plane),
 	    Face(face.img, face.p1, p23, p12, face.t1, t23, t12, face.plane),
-	    Face(face.img, face.p2, face.p3, p23, face.t2, face.t3, t23, face.plane)
+	    Face(face.img, face.p1, face.p3, p23, face.t1, face.t3, t23, face.plane)
 	];
     }
     else if(p23 && p31) {
@@ -151,6 +151,27 @@ function splitface(face, plane) {
 	    Face(face.img, face.p3, p23, p31, face.t3, t23, t31, face.plane),
 	    Face(face.img, face.p1, p31, p23, face.t1, t31, t23, face.plane),
 	    Face(face.img, face.p1, face.p2, p23, face.t1, face.t2, t23, face.plane)
+	];
+    }
+    else if(p12) {
+	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
+	return [
+	    Face(face.img, face.p1, face.p3, p12, face.t1, face.t3, t12, face.plane),
+	    Face(face.img, face.p3, face.p2, p12, face.t3, face.t2, t12, face.plane)
+	];
+    }
+    else if(p23) {
+	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
+	return [
+	    Face(face.img, face.p1, face.p3, p23, face.t1, face.t3, t23, face.plane),
+	    Face(face.img, face.p1, face.p2, p23, face.t1, face.t2, t23, face.plane)
+	];
+    }
+    else if(p31) {
+	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
+	return [
+	    Face(face.img, face.p1, face.p2, p31, face.t1, face.t2, t31, face.plane),
+	    Face(face.img, face.p2, face.p3, p31, face.t2, face.t3, t31, face.plane)
 	];
     }
     else return [face];
@@ -260,11 +281,11 @@ function Context3D(canv, ffov) {
 		while(faces.length) {
 		    let fface = faces.pop();
 		    let ffaces = splitface(fface, pln);
-		    for(let j = 0; j < ffaces.length; j++) {
-			if(pln.point(ffaces[j].p1) * ppvp <= 0.000001 &&
-			   pln.point(ffaces[j].p2) * ppvp <= 0.000001 &&
-			   pln.point(ffaces[j].p3) * ppvp <= 0.000001
-			)
+		    for(let j = 0; j < ffaces.length; j++) {/**/
+			if(pln.point(ffaces[j].p1) * ppvp >= -.0001 &&
+			   pln.point(ffaces[j].p2) * ppvp >= -.0001 &&
+			   pln.point(ffaces[j].p3) * ppvp >= -.0001
+			)/**/
 			faces2.push(ffaces[j]);
 		    }
 		}
@@ -273,11 +294,10 @@ function Context3D(canv, ffov) {
 		}
 	    }
 	    for(let i = 0; i < faces.length; i++) {
-		// debug
 		let p1 = this.camera.project(faces[i].p1);
 		let p2 = this.camera.project(faces[i].p2);
 		let p3 = this.camera.project(faces[i].p3);
-		this.ctx.strokeStyle = 'red';
+		this.ctx.strokeStyle = ['red', 'blue', 'lime', 'magenta', 'yellow', 'orange', 'aqua'][i % 7];
 		this.ctx.lineWidth = 4;
 		this.ctx.beginPath();
 		this.ctx.moveTo(p1.x, p1.y);
@@ -285,6 +305,7 @@ function Context3D(canv, ffov) {
 		this.ctx.lineTo(p3.x, p3.y);
 		this.ctx.lineTo(p1.x, p1.y);
 		this.ctx.stroke();
+		/**/
 		this.idraw(faces[i])
 	    }
 	}

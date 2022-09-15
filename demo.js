@@ -41,8 +41,8 @@ faces = faces2;
 /* ----------------- */
 window.addEventListener('load', function() {
     let canvas = document.querySelector('#mycanv');
-    let ctx3 = Context3D(canvas);
-    let a1 = Math.PI, a2 = Math.PI, dist = 2;
+    ctx3 = Context3D(canvas);
+    let a1 = 0, a2 = 0, dist = 2;
     setInterval(function(){
 	if(keydown[40]) {
 	    a1 -= Math.PI * .03;
@@ -51,10 +51,10 @@ window.addEventListener('load', function() {
 	    a1 += Math.PI * .03;
 	}
 	if(keydown[37]) {
-	    a2 += Math.PI * .03;
+	    a2 -= Math.PI * .03;
 	}
 	if(keydown[39]) {
-	    a2 -= Math.PI * .03;
+	    a2 += Math.PI * .03;
 	}
 	if(keydown[88]) {
 	    dist -= .15;
@@ -64,7 +64,7 @@ window.addEventListener('load', function() {
 	}
 	ctx3.ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx3.camera.tfm =
-	    transform.shift(0, 0, -dist)
+	    transform.shift(0, 0, dist)
 	    .mul(transform.rotx(a1))
 	    .mul(transform.roty(a2));
 	ctx3.camera.update_geometry();
