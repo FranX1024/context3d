@@ -90,10 +90,7 @@ function interpolate(p1, p2, p3, v1, v2, v3) {
 // plane
 function Plane(p1, p2, p3) {
     // p4 must not be on the plane
-    let p4 = point3d(p1.x, p1.y, p1.z);
-    if(p1.x == p2.x && p2.x == p3.x) p4.x += 1;
-    else if(p1.y == p2.y && p2.y == p3.y) p4.y += 1;
-    else p4.z += 1;
+    let p4 = point3d(Math.random()*100, Math.random()*100, Math.random()*100);
     /*
                     [x1 x2 x3 x4]
       [a  b  c  d ] [y1 y2 y3 y4] = [0 0 0 1]

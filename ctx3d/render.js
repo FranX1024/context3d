@@ -4,6 +4,9 @@ function Camera(width, height, fov, pos, facing) {
 	width: width,
 	height: height,
 	tfm: null,
+	planes: null, // fov bounding planes
+	vp: null, // visible point
+	pos: null, // position of camera
 	project(pt) {
 	    let pvec = this.tfm.mul(pt.vec());
 	    let ff = 1 / pvec.data[2][0];
@@ -14,6 +17,8 @@ function Camera(width, height, fov, pos, facing) {
 	},
 	setfov(fov) {
 	    this.fov = Math.tan(fov * .5);
+	    // ...
+	    if(this.tfm) this.update_geometry();
 	},
 	// view point
 	setvp(pos, facing) {
@@ -27,14 +32,50 @@ function Camera(width, height, fov, pos, facing) {
 	    v2 = ry.mul(v2);
 	    this.tfm = ry.mul(this.tfm);/**/
 	    // rot x
-	    let ax = getangle(v2.data[2][0], v2.data[1][0]);this.ax=ax;
+	    let ax = getangle(v2.data[2][0], v2.data[1][0]);
 	    let rx = transform.rotx(ax);
 	    v2 = rx.mul(v2);
-	    this.tfm = rx.mul(this.tfm);/**/
+	    this.tfm = rx.mul(this.tfm);
+	    // ...
+	    this.update_geometry();
+	},
+	update_geometry() {
+	    let tfminv = this.tfm.inv();
+	    this.pos = point3d.from(
+		tfminv.mul(
+		    matrix([[0],[0],[0],[1]])
+		)
+	    );
+	    this.vp = point3d.from(
+		tfminv.mul(
+		    matrix([[0],[0],[1],[1]])
+		)
+	    );
+	    let corners = [];
+	    for(let i = -1; i <= 1; i += 2) {
+		for(let j = -1; j <= 1; j += 2) {
+		    corners.push(point3d.from(
+			tfminv.mul(
+			    matrix([
+				[i*this.fov*.5],
+				[i*j*this.fov*.5],
+				[1],
+				[1]
+			    ])
+			)
+		    ));
+		}
+	    }
+	    this.planes = [];
+	    for(let i = 0; i < 4; i++) {
+		this.planes.push(Plane(
+		    this.pos, corners[i], corners[(i+1) % 4]
+		));
+	    }
 	}
     };
-    if(fov !== undefined) cam.setfov(fov);
-    if(pos !== undefined) cam.setvp(pos, facing);
+    cam.setfov(fov || Math.PI);
+    cam.setvp(pos || point3d(0,0,0), facing || point3d(0,0,1));
     return cam;
 }
 
@@ -73,14 +114,16 @@ function texture_coords(pt, p1, p2, t1, t2) {
 function splitface(face, plane) {
     let fplane = face.plane;
     // independent point
-    let ip = point3d(face.p1.x, face.p1.y, face.p1.z);
-    if(face.p1.x == face.p2.x && face.p2.x == face.p3.x) ip.x++;
-    else if(face.p1.y == face.p2.y && face.p2.y == face.p3.y) ip.y++;
-    else ip.z++;
+    let ip = point3d(Math.random(), Math.random(), Math.random());
     // intersect points
-    let p12 = _splitface_intersect(face.p1, face.p2, plane, fplane, Plane(face.p1, face.p2, ip));
-    let p23 = _splitface_intersect(face.p2, face.p3, plane, fplane, Plane(face.p2, face.p3, ip));
-    let p31 = _splitface_intersect(face.p3, face.p1, plane, fplane, Plane(face.p3, face.p1, ip));
+    let p12, p23, p31;
+    try {
+	p12 = _splitface_intersect(face.p1, face.p2, plane, fplane, Plane(face.p1, face.p2, ip));
+	p23 = _splitface_intersect(face.p2, face.p3, plane, fplane, Plane(face.p2, face.p3, ip));
+	p31 = _splitface_intersect(face.p3, face.p1, plane, fplane, Plane(face.p3, face.p1, ip));
+    } catch(e) {
+	return [face];
+    }
     // determine how to split the face
     /* not sure if it works */
     if(p31 && p12) {
@@ -209,7 +252,41 @@ function Context3D(canv, ffov) {
 	    }
 	},
 	fdraw(face) {
-	    this.idraw(face);
+	    let faces = [face];
+	    let faces2 = [];
+	    for(let i = 0; i < 4; i++) {
+		let pln = this.camera.planes[i];
+		let ppvp = pln.point(this.camera.vp);
+		while(faces.length) {
+		    let fface = faces.pop();
+		    let ffaces = splitface(fface, pln);
+		    for(let j = 0; j < ffaces.length; j++) {
+			if(pln.point(ffaces[j].p1) * ppvp <= 0.000001 &&
+			   pln.point(ffaces[j].p2) * ppvp <= 0.000001 &&
+			   pln.point(ffaces[j].p3) * ppvp <= 0.000001
+			)
+			faces2.push(ffaces[j]);
+		    }
+		}
+		while(faces2.length) {
+		    faces.push(faces2.pop());
+		}
+	    }
+	    for(let i = 0; i < faces.length; i++) {
+		// debug
+		let p1 = this.camera.project(faces[i].p1);
+		let p2 = this.camera.project(faces[i].p2);
+		let p3 = this.camera.project(faces[i].p3);
+		this.ctx.strokeStyle = 'red';
+		this.ctx.lineWidth = 4;
+		this.ctx.beginPath();
+		this.ctx.moveTo(p1.x, p1.y);
+		this.ctx.lineTo(p2.x, p2.y);
+		this.ctx.lineTo(p3.x, p3.y);
+		this.ctx.lineTo(p1.x, p1.y);
+		this.ctx.stroke();
+		this.idraw(faces[i])
+	    }
 	}
     };
 }
