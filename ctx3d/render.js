@@ -193,6 +193,10 @@ function pavg(p1, p2) {
     }
 }
 
+function dist(p1, p2) {
+    return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y)+(p1.z-p2.z)*(p1.z-p2.z);
+}
+
 function Context3D(canv, ffov) {
     let ctx = canv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
@@ -239,7 +243,9 @@ function Context3D(canv, ffov) {
 	    let P = .5 * Math.abs(
 		p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)
 	    );
-	    if(P <= this.pixacc) this.lineardraw(face);
+	    // surface criteria satisfied
+	    if(P <= this.pixacc)
+		this.lineardraw(face);
 	    else {
 		let p12 = pavg(face.p1, face.p2);
 		let p23 = pavg(face.p2, face.p3);
