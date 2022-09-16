@@ -232,10 +232,10 @@ function Context3D(canv, ffov) {
 	    } catch(err) {}
 	},
 	// interpolation
-	idraw(face) {
-	    let p1 = this.camera.project(face.p1);
-	    let p2 = this.camera.project(face.p2);
-	    let p3 = this.camera.project(face.p3);
+	idraw(face, p1, p2, p3) {
+	    p1 = p1 || this.camera.project(face.p1);
+	    p2 = p2 || this.camera.project(face.p2);
+	    p3 = p3 || this.camera.project(face.p3);
 	    let P = .5 * Math.abs(
 		p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)
 	    );
@@ -250,17 +250,17 @@ function Context3D(canv, ffov) {
 		this.idraw(Face(face.img,
 				face.p1, p12, p31,
 				face.t1, t12, t31, face.plane
-			       )
+			       ), p1
 			  );
 		this.idraw(Face(face.img,
 				face.p2, p23, p12,
 				face.t2, t23, t12, face.plane
-			       )
+			       ), p2
 			  );
 		this.idraw(Face(face.img,
 				face.p3, p23, p31,
 				face.t3, t23, t31, face.plane
-			       )
+			       ), p3
 			  );
 		this.idraw(Face(face.img,
 				p12, p23, p31,
@@ -290,20 +290,8 @@ function Context3D(canv, ffov) {
 		    faces.push(faces2.pop());
 		}
 	    }
-	    for(let i = 0; i < faces.length; i++) {/** /
-		let p1 = this.camera.project(faces[i].p1);
-		let p2 = this.camera.project(faces[i].p2);
-		let p3 = this.camera.project(faces[i].p3);
-		this.ctx.strokeStyle = ['red', 'blue', 'lime', 'magenta', 'yellow', 'orange', 'aqua'][i % 7];
-		this.ctx.lineWidth = 4;
-		this.ctx.beginPath();
-		this.ctx.moveTo(p1.x, p1.y);
-		this.ctx.lineTo(p2.x, p2.y);
-		this.ctx.lineTo(p3.x, p3.y);
-		this.ctx.lineTo(p1.x, p1.y);
-		this.ctx.stroke();
-		/**/
-		this.idraw(faces[i])
+	    for(let i = 0; i < faces.length; i++) {
+		this.idraw(faces[i]);
 	    }
 	}
     };
