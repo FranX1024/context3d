@@ -57,8 +57,8 @@ function Camera(width, height, fov, pos, facing) {
 		    corners.push(point3d.from(
 			tfminv.mul(
 			    matrix([
-				[i*this.fov*.5],
-				[i*j*this.fov*.5],
+				[i*this.fov],
+				[i*j*this.fov],
 				[1],
 				[1]
 			    ])
@@ -200,7 +200,7 @@ function Context3D(canv, ffov) {
     return {
 	width: canv.width,
 	height: canv.height,
-	pixacc: 400,
+	pixacc: 800,
 	ctx: ctx,
 	camera: Camera(canv.width, canv.height, ffov, point3d(0, 0, -2), point3d(0, 0, 0)),
 	lineardraw(face) {
@@ -209,10 +209,7 @@ function Context3D(canv, ffov) {
 	    let p3 = this.camera.project(face.p3);
 	    let midp = point2d(.333*(p1.x+p2.x+p3.x),.333*(p1.y+p2.y+p3.y));
 	    // cover the gaps between triangles
-	    aa = 1.1, bb = .1;
-	    p1 = point2d(p1.x * aa - midp.x * bb, p1.y * aa - midp.y * bb);
-	    p2 = point2d(p2.x * aa - midp.x * bb, p2.y * aa - midp.y * bb);
-	    p3 = point2d(p3.x * aa - midp.x * bb, p3.y * aa - midp.y * bb);
+	    // ................................
 	    try {
 		let matr = interpolate(
 		    face.t1, face.t2, face.t3,
@@ -275,16 +272,16 @@ function Context3D(canv, ffov) {
 	fdraw(face) {
 	    let faces = [face];
 	    let faces2 = [];
-	    for(let i = 0; i < 4; i++) {
+	    for(let i = 0; i < this.camera.planes.length; i++) {
 		let pln = this.camera.planes[i];
 		let ppvp = pln.point(this.camera.vp);
 		while(faces.length) {
 		    let fface = faces.pop();
 		    let ffaces = splitface(fface, pln);
 		    for(let j = 0; j < ffaces.length; j++) {/**/
-			if(pln.point(ffaces[j].p1) * ppvp >= -.0001 &&
-			   pln.point(ffaces[j].p2) * ppvp >= -.0001 &&
-			   pln.point(ffaces[j].p3) * ppvp >= -.0001
+			if(pln.point(ffaces[j].p1) * ppvp >= -0.0001 &&
+			   pln.point(ffaces[j].p2) * ppvp >= -0.0001 &&
+			   pln.point(ffaces[j].p3) * ppvp >= -0.0001
 			)/**/
 			faces2.push(ffaces[j]);
 		    }
@@ -293,7 +290,7 @@ function Context3D(canv, ffov) {
 		    faces.push(faces2.pop());
 		}
 	    }
-	    for(let i = 0; i < faces.length; i++) {
+	    for(let i = 0; i < faces.length; i++) {/** /
 		let p1 = this.camera.project(faces[i].p1);
 		let p2 = this.camera.project(faces[i].p2);
 		let p3 = this.camera.project(faces[i].p3);

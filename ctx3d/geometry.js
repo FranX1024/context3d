@@ -88,6 +88,7 @@ function interpolate(p1, p2, p3, v1, v2, v3) {
 }
 
 function independent_point(a, b, c) {
+    //return point3d(Math.random()*100, Math.random()*100, Math.random()*100)
     let matr = matrix([
 	[a.x, b.x, c.x],
 	[a.y, b.y, c.y],

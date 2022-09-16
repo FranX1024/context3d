@@ -65,8 +65,8 @@ window.addEventListener('load', function() {
 	ctx3.ctx.clearRect(0, 0, canvas.width, canvas.height);
 	ctx3.camera.tfm =
 	    transform.shift(0, 0, dist)
-	    .mul(transform.rotx(a1))
-	    .mul(transform.roty(a2));
+	    .mul(transform.rotx(a1+0.001))
+	    .mul(transform.roty(a2+0.001));
 	ctx3.camera.update_geometry();
 	for(let i = 0; i < faces.length; i++) ctx3.fdraw(faces[i]);
     }, 40);
