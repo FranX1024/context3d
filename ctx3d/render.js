@@ -193,26 +193,48 @@ function pavg(p1, p2) {
     }
 }
 
-function dist(p1, p2) {
+function dist3(p1, p2) {
     return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y)+(p1.z-p2.z)*(p1.z-p2.z);
 }
+function dist2(p1, p2) {
+    return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y);
+}
 
-function Context3D(canv, ffov) {
+function ptexpand(midp, pt) {
+    let pt2 = point2d(pt.x, pt.y);
+    
+    if(pt2.x < midp.x) pt2.x -= 2;
+    if(pt2.x > midp.x) pt2.x += 2;
+    
+    if(pt2.y < midp.y) pt2.y -= 2;
+    if(pt2.y > midp.y) pt2.y += 2;
+    
+    if(pt2.z < midp.z) pt2.z -= 2;
+    if(pt2.z > midp.z) pt2.z += 2;
+    
+    return pt2;
+}
+
+function Draw3D(canv, ffov) {
     let ctx = canv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     ffov = ffov || .5*Math.PI;
     return {
 	width: canv.width,
 	height: canv.height,
-	pixacc: 800,
+	pixacc: 1600,
 	ctx: ctx,
-	camera: Camera(canv.width, canv.height, ffov, point3d(0, 0, -2), point3d(0, 0, 0)),
+	camera: Camera(canv.width, canv.height, ffov),
+
 	lineardraw(face) {
 	    let p1 = this.camera.project(face.p1);
 	    let p2 = this.camera.project(face.p2);
 	    let p3 = this.camera.project(face.p3);
-	    let midp = point2d(.333*(p1.x+p2.x+p3.x),.333*(p1.y+p2.y+p3.y));
 	    // cover the gaps between triangles
+	    let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
+	    let pp1 = ptexpand(midp, p1);
+	    let pp2 = ptexpand(midp, p2);
+	    let pp3 = ptexpand(midp, p3);
 	    // ................................
 	    try {
 		let matr = interpolate(
@@ -221,10 +243,10 @@ function Context3D(canv, ffov) {
 		);
 		this.ctx.save();
 		this.ctx.beginPath();
-		this.ctx.moveTo(p1.x, p1.y);
-		this.ctx.lineTo(p2.x, p2.y);
-		this.ctx.lineTo(p3.x, p3.y);
-		this.ctx.lineTo(p1.x, p1.y);
+		this.ctx.moveTo(pp1.x, pp1.y);
+		this.ctx.lineTo(pp2.x, pp2.y);
+		this.ctx.lineTo(pp3.x, pp3.y);
+		this.ctx.lineTo(pp1.x, pp1.y);
 		this.ctx.clip();
 		this.ctx.transform(
 		    matr.data[0][0], matr.data[1][0],
@@ -235,14 +257,15 @@ function Context3D(canv, ffov) {
 		this.ctx.restore();
 	    } catch(err) {}
 	},
-	// interpolation
+	
 	idraw(face, p1, p2, p3) {
 	    p1 = p1 || this.camera.project(face.p1);
 	    p2 = p2 || this.camera.project(face.p2);
 	    p3 = p3 || this.camera.project(face.p3);
-	    let P = .5 * Math.abs(
+	    let P = Math.abs(
 		p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)
-	    );
+	    )*.95 + .05*Math.max(dist2(p1, p2), dist2(p2, p3), dist2(p3, p1));
+	    
 	    // surface criteria satisfied
 	    if(P <= this.pixacc)
 		this.lineardraw(face);
@@ -275,6 +298,7 @@ function Context3D(canv, ffov) {
 			  );
 	    }
 	},
+
 	fdraw(face) {
 	    let faces = [face];
 	    let faces2 = [];
