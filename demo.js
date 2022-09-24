@@ -41,7 +41,7 @@ faces = faces2;
 /* ----------------- */
 window.addEventListener('load', function() {
     let canvas = document.querySelector('#mycanv');
-    ctx3 = Context3D(canvas);
+    ctx3 = Draw3D(canvas);
     let a1 = 0, a2 = 0, dist = 2;
     setInterval(function(){
 	if(keydown[40]) {
