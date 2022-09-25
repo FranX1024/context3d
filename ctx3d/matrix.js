@@ -103,7 +103,16 @@ function matrix(arg1, arg2) {
 		}
 	    }
 	    return adjm;
-	}
+	},
+    eq(m2) {
+        if(this.rows != m2.rows || this.cols != m2.cols) return false;
+        for(let i = 0; i < this.rows; i++) {
+            for(let j = 0; j < this.cols; j++) {
+                if(this.data[i][j] != m2.data[i][j]) return false;
+            }
+        }
+        return true;
+    }
     }
 }
 matrix.identity = function(x) {

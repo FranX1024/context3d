@@ -213,7 +213,7 @@ function sort3d(faces, cpos) {
     let ppvp = pln.point(cpos);
     for(let i = 0; i < faces.length; i++) {
         if(i == pvi) continue;
-        if(faces[i].plane == pln) {
+        if(faces[i].plane.matr.eq(pln.matr)) {
             facesm.push(faces[i]);
             continue;
         }
@@ -367,11 +367,11 @@ function Draw3D(canv, ffov) {
             while(faces.length) {
                 let fface = faces.pop();
                 let ffaces = splitface(fface, pln);
-                for(let j = 0; j < ffaces.length; j++) {/**/
+                for(let j = 0; j < ffaces.length; j++) {
                 if(pln.point(ffaces[j].p1) * ppvp >= -0.0001 &&
                 pln.point(ffaces[j].p2) * ppvp >= -0.0001 &&
                 pln.point(ffaces[j].p3) * ppvp >= -0.0001
-                )/**/
+                )
                 faces2.push(ffaces[j]);
                 }
             }
