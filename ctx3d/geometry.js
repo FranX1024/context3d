@@ -1,4 +1,4 @@
-const transform = {
+const affine = {
     // rotation around axis (left-hand)
     rotx(alfa) {
 	let s = Math.sin(alfa);

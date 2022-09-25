@@ -23,17 +23,17 @@ function Camera(width, height, fov, pos, facing) {
 	// view point
 	setvp(pos, facing) {
 	    let v2 = facing.vec();
-	    let trlate = transform.shift(-pos.x, -pos.y, -pos.z);
+	    let trlate = affine.shift(-pos.x, -pos.y, -pos.z);
 	    this.tfm = trlate;
 	    v2 = trlate.mul(v2);this.v2=v2;/**/
 	    // rot y
 	    let ay = -getangle(v2.data[2][0], v2.data[0][0]);
-	    let ry = transform.roty(ay);
+	    let ry = affine.roty(ay);
 	    v2 = ry.mul(v2);
 	    this.tfm = ry.mul(this.tfm);/**/
 	    // rot x
 	    let ax = getangle(v2.data[2][0], v2.data[1][0]);
-	    let rx = transform.rotx(ax);
+	    let rx = affine.rotx(ax);
 	    v2 = rx.mul(v2);
 	    this.tfm = rx.mul(this.tfm);
 	    // ...
@@ -58,7 +58,7 @@ function Camera(width, height, fov, pos, facing) {
 			tfminv.mul(
 			    matrix([
 				[i*this.fov],
-				[i*j*this.fov],
+				[i*j],
 				[1],
 				[1]
 			    ])
@@ -200,6 +200,39 @@ function dist2(p1, p2) {
     return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y);
 }
 
+
+
+function sort3d(faces, cpos) {
+    if(faces.length <= 1) return faces;
+    let pvi = Math.floor(Math.random() * faces.length);
+    let pivot = faces[pvi];
+    let faces1 = [];
+    let faces2 = [];
+    let facesm = [pivot];
+    let pln = pivot.plane;
+    let ppvp = pln.point(cpos);
+    for(let i = 0; i < faces.length; i++) {
+        if(i == pvi) continue;
+        if(faces[i].plane == pln) {
+            facesm.push(faces[i]);
+            continue;
+        }
+        let spfs = splitface(faces[i], pln);
+        for(let j = 0; j < spfs.length; j++) {
+            if(pln.point(spfs[j].p1) * ppvp >= 0 &&
+                pln.point(spfs[j].p2) * ppvp >= 0 &&
+                pln.point(spfs[j].p3) * ppvp >= 0
+                )/**/
+                faces2.push(spfs[j]);
+            else {
+                faces1.push(spfs[j]);
+            }
+        }
+    }
+    return [...sort3d(faces1, cpos), ...facesm, ...sort3d(faces2, cpos)];
+}
+
+
 function ptexpand(midp, pt) {
     let pt2 = point2d(pt.x, pt.y);
     
@@ -220,109 +253,150 @@ function Draw3D(canv, ffov) {
     ctx.imageSmoothingEnabled = false;
     ffov = ffov || .5*Math.PI;
     return {
-	width: canv.width,
-	height: canv.height,
-	pixacc: 1600,
-	ctx: ctx,
-	camera: Camera(canv.width, canv.height, ffov),
+        width: canv.width,
+        height: canv.height,
+        pixacc: 2000,
+        ctx: ctx,
+        camera: Camera(canv.width, canv.height, ffov),
 
-	lineardraw(face) {
-	    let p1 = this.camera.project(face.p1);
-	    let p2 = this.camera.project(face.p2);
-	    let p3 = this.camera.project(face.p3);
-	    // cover the gaps between triangles
-	    let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
-	    let pp1 = ptexpand(midp, p1);
-	    let pp2 = ptexpand(midp, p2);
-	    let pp3 = ptexpand(midp, p3);
-	    // ................................
-	    try {
-		let matr = interpolate(
-		    face.t1, face.t2, face.t3,
-		    p1.vec(), p2.vec(), p3.vec()
-		);
-		this.ctx.save();
-		this.ctx.beginPath();
-		this.ctx.moveTo(pp1.x, pp1.y);
-		this.ctx.lineTo(pp2.x, pp2.y);
-		this.ctx.lineTo(pp3.x, pp3.y);
-		this.ctx.lineTo(pp1.x, pp1.y);
-		this.ctx.clip();
-		this.ctx.transform(
-		    matr.data[0][0], matr.data[1][0],
-		    matr.data[0][1], matr.data[1][1],
-		    matr.data[0][2], matr.data[1][2]
-		);
-		this.ctx.drawImage(face.img, 0, 0);
-		this.ctx.restore();
-	    } catch(err) {}
-	},
-	
-	idraw(face, p1, p2, p3) {
-	    p1 = p1 || this.camera.project(face.p1);
-	    p2 = p2 || this.camera.project(face.p2);
-	    p3 = p3 || this.camera.project(face.p3);
-	    let P = Math.abs(
-		p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)
-	    )*.95 + .05*Math.max(dist2(p1, p2), dist2(p2, p3), dist2(p3, p1));
-	    
-	    // surface criteria satisfied
-	    if(P <= this.pixacc)
-		this.lineardraw(face);
-	    else {
-		let p12 = pavg(face.p1, face.p2);
-		let p23 = pavg(face.p2, face.p3);
-		let p31 = pavg(face.p3, face.p1);
-		let t12 = pavg(face.t1, face.t2);
-		let t23 = pavg(face.t2, face.t3);
-		let t31 = pavg(face.t3, face.t1);
-		this.idraw(Face(face.img,
-				face.p1, p12, p31,
-				face.t1, t12, t31, face.plane
-			       ), p1
-			  );
-		this.idraw(Face(face.img,
-				face.p2, p23, p12,
-				face.t2, t23, t12, face.plane
-			       ), p2
-			  );
-		this.idraw(Face(face.img,
-				face.p3, p23, p31,
-				face.t3, t23, t31, face.plane
-			       ), p3
-			  );
-		this.idraw(Face(face.img,
-				p12, p23, p31,
-				t12, t23, t31, face.plane
-			       )
-			  );
-	    }
-	},
+        lineardraw(face) {
+            let p1 = this.camera.project(face.p1);
+            let p2 = this.camera.project(face.p2);
+            let p3 = this.camera.project(face.p3);
+            // cover the gaps between triangles
+            let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
+            let pp1 = ptexpand(midp, p1);
+            let pp2 = ptexpand(midp, p2);
+            let pp3 = ptexpand(midp, p3);
+            // ................................
+            try {
+            let matr = interpolate(
+                face.t1, face.t2, face.t3,
+                p1.vec(), p2.vec(), p3.vec()
+            );
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.moveTo(pp1.x, pp1.y);
+            this.ctx.lineTo(pp2.x, pp2.y);
+            this.ctx.lineTo(pp3.x, pp3.y);
+            this.ctx.lineTo(pp1.x, pp1.y);
+            this.ctx.clip();
+            this.ctx.transform(
+                matr.data[0][0], matr.data[1][0],
+                matr.data[0][1], matr.data[1][1],
+                matr.data[0][2], matr.data[1][2]
+            );
+            this.ctx.drawImage(face.img, 0, 0);
+            this.ctx.restore();
+            } catch(err) {}
+        },
+        
+        cdraw(face) {
+            let p1 = this.camera.project(face.p1);
+            let p2 = this.camera.project(face.p2);
+            let p3 = this.camera.project(face.p3);
+            // cover the gaps between triangles
+            let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
+            let pp1 = ptexpand(midp, p1);
+            let pp2 = ptexpand(midp, p2);
+            let pp3 = ptexpand(midp, p3);
+            // ................................
+            try {
+            let matr = interpolate(
+                face.t1, face.t2, face.t3,
+                p1.vec(), p2.vec(), p3.vec()
+            );
+            this.ctx.fillStyle = face.img;
+            this.ctx.save();
+            this.ctx.beginPath();
+            this.ctx.moveTo(pp1.x, pp1.y);
+            this.ctx.lineTo(pp2.x, pp2.y);
+            this.ctx.lineTo(pp3.x, pp3.y);
+            this.ctx.lineTo(pp1.x, pp1.y);
+            this.ctx.fill();
+            } catch(err) {}
+        },
+        
+        idraw(face, p1, p2, p3) {
+            p1 = p1 || this.camera.project(face.p1);
+            p2 = p2 || this.camera.project(face.p2);
+            p3 = p3 || this.camera.project(face.p3);
+            let P = Math.abs(
+            p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y)
+            )*.95 + .05*Math.max(dist2(p1, p2), dist2(p2, p3), dist2(p3, p1));
+            
+            // surface criteria satisfied
+            if(P <= this.pixacc)
+            this.lineardraw(face);
+            else {
+            let p12 = pavg(face.p1, face.p2);
+            let p23 = pavg(face.p2, face.p3);
+            let p31 = pavg(face.p3, face.p1);
+            let t12 = pavg(face.t1, face.t2);
+            let t23 = pavg(face.t2, face.t3);
+            let t31 = pavg(face.t3, face.t1);
+            this.idraw(Face(face.img,
+                    face.p1, p12, p31,
+                    face.t1, t12, t31, face.plane
+                    ), p1
+                );
+            this.idraw(Face(face.img,
+                    face.p2, p23, p12,
+                    face.t2, t23, t12, face.plane
+                    ), p2
+                );
+            this.idraw(Face(face.img,
+                    face.p3, p23, p31,
+                    face.t3, t23, t31, face.plane
+                    ), p3
+                );
+            this.idraw(Face(face.img,
+                    p12, p23, p31,
+                    t12, t23, t31, face.plane
+                    )
+                );
+            }
+        },
 
-	fdraw(face) {
-	    let faces = [face];
-	    let faces2 = [];
-	    for(let i = 0; i < this.camera.planes.length; i++) {
-		let pln = this.camera.planes[i];
-		let ppvp = pln.point(this.camera.vp);
-		while(faces.length) {
-		    let fface = faces.pop();
-		    let ffaces = splitface(fface, pln);
-		    for(let j = 0; j < ffaces.length; j++) {/**/
-			if(pln.point(ffaces[j].p1) * ppvp >= -0.0001 &&
-			   pln.point(ffaces[j].p2) * ppvp >= -0.0001 &&
-			   pln.point(ffaces[j].p3) * ppvp >= -0.0001
-			)/**/
-			faces2.push(ffaces[j]);
-		    }
-		}
-		while(faces2.length) {
-		    faces.push(faces2.pop());
-		}
-	    }
-	    for(let i = 0; i < faces.length; i++) {
-		this.idraw(faces[i]);
-	    }
-	}
+        fdraw(face) {
+            let faces = [face];
+            let faces2 = [];
+            for(let i = 0; i < this.camera.planes.length; i++) {
+            let pln = this.camera.planes[i];
+            let ppvp = pln.point(this.camera.vp);
+            while(faces.length) {
+                let fface = faces.pop();
+                let ffaces = splitface(fface, pln);
+                for(let j = 0; j < ffaces.length; j++) {/**/
+                if(pln.point(ffaces[j].p1) * ppvp >= -0.0001 &&
+                pln.point(ffaces[j].p2) * ppvp >= -0.0001 &&
+                pln.point(ffaces[j].p3) * ppvp >= -0.0001
+                )/**/
+                faces2.push(ffaces[j]);
+                }
+            }
+            while(faces2.length) {
+                faces.push(faces2.pop());
+            }
+            }
+            for(let i = 0; i < faces.length; i++) {
+                if(typeof faces[i].img == 'string') // color
+                    this.cdraw(faces[i])
+                else
+            this.idraw(faces[i]);
+            }
+        },
+
+        clear() {
+            this.ctx.clearRect(0, 0, this.width, this.height);
+        },
+        
+        drawScene(faces) {
+            this.ctx.clearRect(0, 0, this.width, this.height);
+            let faces2 = sort3d(faces, this.camera.vp);
+            document.querySelector('p').innerText = (JSON.stringify(faces2.map(x=>x.img)))
+            for(let i = 0; i < faces2.length; i++)
+                this.fdraw(faces2[i]);
+        }
     };
 }
