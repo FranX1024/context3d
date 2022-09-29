@@ -103,11 +103,13 @@ function _splitface_intersect(p1, p2, plane1, plane2, plane3) {
 }
 
 function texture_coords(pt, p1, p2, t1, t2) {
-    let ff_x = p1.x - p2.x != 0 ? 1/(p1.x - p2.x) : 0;
-    let ff_y = p1.y - p2.y != 0 ? 1/(p1.y - p2.y) : 0;
+    let f3 = 0;
+    if(p1.x != p2.x) f3 = (pt.x-p1.x)/(p2.x-p1.x);
+    else if(p1.y != p2.y) f3 = (pt.y-p1.y)/(p2.y-p1.y);
+    else if(p1.z != p2.z) f3 = (pt.z-p1.z)/(p2.z-p1.z);
     return point2d(
-	t1.x + (pt.x - p1.x) * ff_x * (t1.x - t2.x),
-	t1.y + (pt.y - p1.y) * ff_y * (t1.y - t2.y)
+	t1.x + (t2.x - t1.x) * f3,
+	t1.y + (t2.y - t1.y) * f3
     );
 }
 
@@ -219,9 +221,9 @@ function sort3d(faces, cpos) {
         }
         let spfs = splitface(faces[i], pln);
         for(let j = 0; j < spfs.length; j++) {
-            if(pln.point(spfs[j].p1) * ppvp >= 0 &&
-                pln.point(spfs[j].p2) * ppvp >= 0 &&
-                pln.point(spfs[j].p3) * ppvp >= 0
+            if((pln.point(spfs[j].p1) +
+                pln.point(spfs[j].p2) +
+               pln.point(spfs[j].p3)) * ppvp >= 0
                 )/**/
                 faces2.push(spfs[j]);
             else {
@@ -263,12 +265,6 @@ function Draw3D(canv, ffov) {
             let p1 = this.camera.project(face.p1);
             let p2 = this.camera.project(face.p2);
             let p3 = this.camera.project(face.p3);
-            // cover the gaps between triangles
-            let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
-            let pp1 = ptexpand(midp, p1);
-            let pp2 = ptexpand(midp, p2);
-            let pp3 = ptexpand(midp, p3);
-            // ................................
             try {
             let matr = interpolate(
                 face.t1, face.t2, face.t3,
@@ -276,10 +272,10 @@ function Draw3D(canv, ffov) {
             );
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.moveTo(pp1.x, pp1.y);
-            this.ctx.lineTo(pp2.x, pp2.y);
-            this.ctx.lineTo(pp3.x, pp3.y);
-            this.ctx.lineTo(pp1.x, pp1.y);
+            this.ctx.moveTo(p1.x, p1.y);
+            this.ctx.lineTo(p2.x, p2.y);
+		this.ctx.lineTo(p3.x, p3.y);
+		this.ctx.closePath();
             this.ctx.clip();
             this.ctx.transform(
                 matr.data[0][0], matr.data[1][0],
@@ -295,26 +291,14 @@ function Draw3D(canv, ffov) {
             let p1 = this.camera.project(face.p1);
             let p2 = this.camera.project(face.p2);
             let p3 = this.camera.project(face.p3);
-            // cover the gaps between triangles
-            let midp = point2d(.3333 * (p1.x + p2.x + p3.x), .3333 * (p1.y + p2.y + p3.y));
-            let pp1 = ptexpand(midp, p1);
-            let pp2 = ptexpand(midp, p2);
-            let pp3 = ptexpand(midp, p3);
-            // ................................
-            try {
-            let matr = interpolate(
-                face.t1, face.t2, face.t3,
-                p1.vec(), p2.vec(), p3.vec()
-            );
             this.ctx.fillStyle = face.img;
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.moveTo(pp1.x, pp1.y);
-            this.ctx.lineTo(pp2.x, pp2.y);
-            this.ctx.lineTo(pp3.x, pp3.y);
-            this.ctx.lineTo(pp1.x, pp1.y);
+            this.ctx.moveTo(p1.x, p1.y);
+            this.ctx.lineTo(p2.x, p2.y);
+            this.ctx.lineTo(p3.x, p3.y);
+	    this.ctx.closePath();
             this.ctx.fill();
-            } catch(err) {}
         },
         
         idraw(face, p1, p2, p3) {
@@ -368,10 +352,10 @@ function Draw3D(canv, ffov) {
                 let fface = faces.pop();
                 let ffaces = splitface(fface, pln);
                 for(let j = 0; j < ffaces.length; j++) {
-                if(pln.point(ffaces[j].p1) * ppvp >= -0.0001 &&
-                pln.point(ffaces[j].p2) * ppvp >= -0.0001 &&
-                pln.point(ffaces[j].p3) * ppvp >= -0.0001
-                )
+                    if((pln.point(ffaces[j].p1) + 
+                pln.point(ffaces[j].p2) +
+			pln.point(ffaces[j].p3)) * ppvp >= 0
+                      )
                 faces2.push(ffaces[j]);
                 }
             }
@@ -383,7 +367,7 @@ function Draw3D(canv, ffov) {
                 if(typeof faces[i].img == 'string') // color
                     this.cdraw(faces[i])
                 else
-            this.idraw(faces[i]);
+		    this.idraw(faces[i]);
             }
         },
 
