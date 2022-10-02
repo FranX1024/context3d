@@ -1,14 +1,3 @@
-function printmatr(mm) {
-    ss = '';
-    for(let i = 0; i < mm.rows; i++) {
-	for(let j = 0; j < mm.cols; j++) {
-	    ss += mm.data[i][j] + '\t';
-	}
-	ss += '\n';
-    }
-    console.log(ss);
-}
-
 function matrix(arg1, arg2) {
     let arr, rows, cols;
     if(typeof arg1 == 'number' && typeof arg2 == 'number') {
@@ -114,12 +103,12 @@ function matrix(arg1, arg2) {
         return true;
     }
     }
-}
+};
 matrix.identity = function(x) {
     let mm = matrix(x, x);
     for(let i = 0; i < x; i++) mm.data[i][i] = 1;
     return mm;
-}
+};
 matrix.merge_cols = function(...args) {
     let matr = matrix(args[0].rows, args.length);
     for(let i = 0; i < matr.rows; i++) {
@@ -128,14 +117,14 @@ matrix.merge_cols = function(...args) {
 	}
     }
     return matr;
-}
+};
 matrix.merge_rows = function(...args) {
     let mmm = [];
     for(let i = 0; i < args.length; i++) {
 	mmm.push(args[i].data[0]);
     }
     return matrix(mmm);
-}
+};
 
 /*
 for(let j = 0; j < this.cols; j++) {

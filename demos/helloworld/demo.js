@@ -27,7 +27,7 @@ faces.push(Face(
     point2d(400, 0),
     point2d(0, 400)
 ));
-faces.push(Face(
+/*faces.push(Face(
     img,//'#9f7928',
     point3d(1, 0, 1),
     point3d(-1, 0, 1),
@@ -35,7 +35,7 @@ faces.push(Face(
     point2d(0, 0),
     point2d(0, 400),
     point2d(400, 0)
-));
+));*/
 
 window.addEventListener('load', function() {
     let canvas = document.querySelector('#mycanv');
@@ -65,6 +65,7 @@ window.addEventListener('load', function() {
 	    .mul(affine.rotx(a1+0.001))
 	    .mul(affine.roty(a2+0.001));
 	ctx3.camera.update_geometry();
+	ctx3.clear();
 	ctx3.drawScene(faces);
     }, 60);
     // keys

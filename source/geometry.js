@@ -55,7 +55,7 @@ point3d.from = function(vec) {
 	vec.data[1][0],
 	vec.data[2][0]
     );
-}
+};
 
 function point2d(x, y) {
     return {
@@ -64,13 +64,13 @@ function point2d(x, y) {
 	    return matrix([[this.x],[this.y],[1]]);
 	}
     };
-}
+};
 point2d.from = function(vec) {
     return point2d(
 	vec.data[0][0],
 	vec.data[1][0]
     );
-}
+};
 
 function getangle(cos, sin) {
     if(cos == 0 && sin == 0) return 0;
@@ -79,13 +79,13 @@ function getangle(cos, sin) {
     let a = Math.acos(cos);
     if(sin < 0) a = 2 * Math.PI - a;
     return a;
-}
+};
 
 function interpolate(p1, p2, p3, v1, v2, v3) {
     let m1 = matrix.merge_cols(p1.vec(), p2.vec(), p3.vec());
     let m2 = matrix.merge_cols(v1, v2, v3);
     return m2.mul(m1.inv());
-}
+};
 
 function independent_point(a, b, c) {
     //return point3d(Math.random()*100, Math.random()*100, Math.random()*100)
@@ -108,7 +108,7 @@ function independent_point(a, b, c) {
     ]).mul(invv);
     let zz = mm.mul(matrix([[a.x],[a.y],[1]])).data[0][0] + 5;
     return point3d(a.x, a.y, zz);
-}
+};
 
 // plane
 function Plane(p1, p2, p3) {
@@ -132,4 +132,4 @@ function Plane(p1, p2, p3) {
 	    return this.matr.mul(pt.vec()).data[0][0];
 	}
     }
-}
+};

@@ -77,7 +77,7 @@ function Camera(width, height, fov, pos, facing) {
     cam.setfov(fov || Math.PI);
     cam.setvp(pos || point3d(0,0,0), facing || point3d(0,0,1));
     return cam;
-}
+};
 
 function _splitface_intersect(p1, p2, plane1, plane2, plane3) {
     let matr = matrix.merge_rows(
@@ -92,15 +92,15 @@ function _splitface_intersect(p1, p2, plane1, plane2, plane3) {
 	return null;
     }
     let pt = point3d.from(ptvec);
-    if(pt.x > Math.max(p1.x, p2.x) ||
-       pt.x < Math.min(p1.x, p2.x) ||
-       pt.y > Math.max(p1.y, p2.y) ||
-       pt.y < Math.min(p1.y, p2.y) ||
-       pt.z > Math.max(p1.z, p2.z) ||
-       pt.z < Math.min(p1.z, p2.z) 
+    if(pt.x > Math.max(p1.x, p2.x)+.01 ||
+       pt.x < Math.min(p1.x, p2.x)-.01 ||
+       pt.y > Math.max(p1.y, p2.y)+.01 ||
+       pt.y < Math.min(p1.y, p2.y)-.01 ||
+       pt.z > Math.max(p1.z, p2.z)+.01 ||
+       pt.z < Math.min(p1.z, p2.z)-.01
       ) return null;
     return pt;
-}
+};
 
 function texture_coords(pt, p1, p2, t1, t2) {
     let f3 = 0;
@@ -111,7 +111,7 @@ function texture_coords(pt, p1, p2, t1, t2) {
 	t1.x + (t2.x - t1.x) * f3,
 	t1.y + (t2.y - t1.y) * f3
     );
-}
+};
 
 function splitface(face, plane) {
     let fplane = face.plane;
@@ -128,7 +128,7 @@ function splitface(face, plane) {
     }
     // determine how to split the face
     /* not sure if it works */
-    if(p31 && p12) {
+    if(p31 !== null && p12 !== null) {
 	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
 	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
 	return [
@@ -137,7 +137,7 @@ function splitface(face, plane) {
 	    Face(face.img, face.p2, face.p3, p31, face.t2, face.t3, t31, face.plane)
 	];
     }
-    else if(p12 && p23) {
+    else if(p12 !== null && p23 !== null) {
 	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
 	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
 	return [
@@ -146,7 +146,7 @@ function splitface(face, plane) {
 	    Face(face.img, face.p1, face.p3, p23, face.t1, face.t3, t23, face.plane)
 	];
     }
-    else if(p23 && p31) {
+    else if(p23 !== null && p31 !== null) {
 	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
 	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
 	return [
@@ -155,21 +155,21 @@ function splitface(face, plane) {
 	    Face(face.img, face.p1, face.p2, p23, face.t1, face.t2, t23, face.plane)
 	];
     }
-    else if(p12) {
+    else if(p12 !== null) {
 	let t12 = texture_coords(p12, face.p1, face.p2, face.t1, face.t2);
 	return [
 	    Face(face.img, face.p1, face.p3, p12, face.t1, face.t3, t12, face.plane),
 	    Face(face.img, face.p3, face.p2, p12, face.t3, face.t2, t12, face.plane)
 	];
     }
-    else if(p23) {
+    else if(p23 !== null) {
 	let t23 = texture_coords(p23, face.p2, face.p3, face.t2, face.t3);
 	return [
 	    Face(face.img, face.p1, face.p3, p23, face.t1, face.t3, t23, face.plane),
 	    Face(face.img, face.p1, face.p2, p23, face.t1, face.t2, t23, face.plane)
 	];
     }
-    else if(p31) {
+    else if(p31 !== null) {
 	let t31 = texture_coords(p31, face.p3, face.p1, face.t3, face.t1);
 	return [
 	    Face(face.img, face.p1, face.p2, p31, face.t1, face.t2, t31, face.plane),
@@ -177,14 +177,14 @@ function splitface(face, plane) {
 	];
     }
     else return [face];
-}
+};
 
 function Face(img, p1, p2, p3, t1, t2, t3, pln) {
     return {
 	p1, p2, p3, img,
 	t1, t2, t3, plane: pln || Plane(p1, p2, p3)
     };
-}
+};
 
 // mid point on a line
 function pavg(p1, p2) {
@@ -193,14 +193,14 @@ function pavg(p1, p2) {
     } else {
 	return point2d(.5 * (p1.x + p2.x), .5 * (p1.y + p2.y));
     }
-}
+};
 
 function dist3(p1, p2) {
     return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y)+(p1.z-p2.z)*(p1.z-p2.z);
-}
+};
 function dist2(p1, p2) {
     return (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y);
-}
+};
 
 
 
@@ -232,7 +232,7 @@ function sort3d(faces, cpos) {
         }
     }
     return [...sort3d(faces1, cpos), ...facesm, ...sort3d(faces2, cpos)];
-}
+};
 
 
 function ptexpand(midp, pt) {
@@ -248,7 +248,7 @@ function ptexpand(midp, pt) {
     if(pt2.z > midp.z) pt2.z += 2;
     
     return pt2;
-}
+};
 
 function Draw3D(canv, ffov) {
     let ctx = canv.getContext('2d');
@@ -346,26 +346,26 @@ function Draw3D(canv, ffov) {
             let faces = [face];
             let faces2 = [];
             for(let i = 0; i < this.camera.planes.length; i++) {
-            let pln = this.camera.planes[i];
-            let ppvp = pln.point(this.camera.vp);
-            while(faces.length) {
-                let fface = faces.pop();
-                let ffaces = splitface(fface, pln);
-                for(let j = 0; j < ffaces.length; j++) {
-                    if((pln.point(ffaces[j].p1) + 
-                pln.point(ffaces[j].p2) +
-			pln.point(ffaces[j].p3)) * ppvp >= 0
-                      )
-                faces2.push(ffaces[j]);
-                }
-            }
-            while(faces2.length) {
-                faces.push(faces2.pop());
-            }
+		let pln = this.camera.planes[i];
+		let ppvp = pln.point(this.camera.vp);
+		while(faces.length) {
+                    let fface = faces.pop();
+                    let ffaces = splitface(fface, pln);
+                    for(let j = 0; j < ffaces.length; j++) {
+			if((pln.point(ffaces[j].p1) + 
+			    pln.point(ffaces[j].p2) +
+			    pln.point(ffaces[j].p3)) * ppvp > 0
+			  )
+			    faces2.push(ffaces[j]);
+                    }
+		}
+		while(faces2.length) {
+                    faces.push(faces2.pop());
+		}
             }
             for(let i = 0; i < faces.length; i++) {
                 if(typeof faces[i].img == 'string') // color
-                    this.cdraw(faces[i])
+                    this.cdraw(faces[i]);
                 else
 		    this.idraw(faces[i]);
             }
@@ -376,10 +376,9 @@ function Draw3D(canv, ffov) {
         },
         
         drawScene(faces) {
-            this.ctx.clearRect(0, 0, this.width, this.height);
-            let faces2 = sort3d(faces, this.camera.vp);
+            let faces2 = sort3d(faces, this.camera.pos);
             for(let i = 0; i < faces2.length; i++)
                 this.fdraw(faces2[i]);
         }
     };
-}
+};
