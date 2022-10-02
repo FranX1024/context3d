@@ -378,7 +378,6 @@ function Draw3D(canv, ffov) {
         drawScene(faces) {
             this.ctx.clearRect(0, 0, this.width, this.height);
             let faces2 = sort3d(faces, this.camera.vp);
-            document.querySelector('p').innerText = (JSON.stringify(faces2.map(x=>x.img)))
             for(let i = 0; i < faces2.length; i++)
                 this.fdraw(faces2[i]);
         }

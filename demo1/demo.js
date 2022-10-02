@@ -28,13 +28,13 @@ faces.push(Face(
     point2d(0, 400)
 ));
 faces.push(Face(
-    '#9f7928',
+    img,//'#9f7928',
     point3d(1, 0, 1),
     point3d(-1, 0, 1),
-    point3d(0, 0, -.5),
-    point2d(400, 400),
-    point2d(400, 0),
-    point2d(0, 400)
+    point3d(-1, 0, -1),
+    point2d(0, 0),
+    point2d(0, 400),
+    point2d(400, 0)
 ));
 
 window.addEventListener('load', function() {
