@@ -28,7 +28,7 @@ faces.push(Face(
     point2d(0, 400)
 ));
 /*faces.push(Face(
-    img,//'#9f7928',
+    img,
     point3d(1, 0, 1),
     point3d(-1, 0, 1),
     point3d(-1, 0, -1),

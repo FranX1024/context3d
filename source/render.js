@@ -237,15 +237,16 @@ function sort3d(faces, cpos) {
 
 function ptexpand(midp, pt) {
     let pt2 = point2d(pt.x, pt.y);
+    pt2.x += (pt.x - midp.x) * .1;
+    pt2.y += (pt.y - midp.y) * .1;
+    /*if(pt2.x < midp.x) pt2.x -= 1;
+    if(pt2.x > midp.x) pt2.x += 1;
     
-    if(pt2.x < midp.x) pt2.x -= 2;
-    if(pt2.x > midp.x) pt2.x += 2;
+    if(pt2.y < midp.y) pt2.y -= 1;
+    if(pt2.y > midp.y) pt2.y += 1;
     
-    if(pt2.y < midp.y) pt2.y -= 2;
-    if(pt2.y > midp.y) pt2.y += 2;
-    
-    if(pt2.z < midp.z) pt2.z -= 2;
-    if(pt2.z > midp.z) pt2.z += 2;
+    if(pt2.z < midp.z) pt2.z -= 1;
+    if(pt2.z > midp.z) pt2.z += 1;*/
     
     return pt2;
 };
@@ -265,6 +266,10 @@ function Draw3D(canv, ffov) {
             let p1 = this.camera.project(face.p1);
             let p2 = this.camera.project(face.p2);
             let p3 = this.camera.project(face.p3);
+            let midp = point2d((p1.x+p2.x+p3.x)*.3333, (p1.y+p2.y+p3.y)*.3333);
+            let pp1 = ptexpand(midp, p1);
+            let pp2 = ptexpand(midp, p2);
+            let pp3 = ptexpand(midp, p3);
             try {
             let matr = interpolate(
                 face.t1, face.t2, face.t3,
@@ -272,9 +277,9 @@ function Draw3D(canv, ffov) {
             );
             this.ctx.save();
             this.ctx.beginPath();
-            this.ctx.moveTo(p1.x, p1.y);
-            this.ctx.lineTo(p2.x, p2.y);
-		this.ctx.lineTo(p3.x, p3.y);
+            this.ctx.moveTo(pp1.x, pp1.y);
+            this.ctx.lineTo(pp2.x, pp2.y);
+		this.ctx.lineTo(pp3.x, pp3.y);
 		this.ctx.closePath();
             this.ctx.clip();
             this.ctx.transform(
